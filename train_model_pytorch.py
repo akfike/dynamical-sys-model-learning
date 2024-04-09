@@ -6,33 +6,29 @@ from sklearn.metrics import r2_score, mean_absolute_error
 import matplotlib.pyplot as plt
 from torch.utils.data import TensorDataset, DataLoader
 
-# Check if GPU is available and set device accordingly
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define PyTorch model
 class NeuralNetwork(nn.Module):
     def __init__(self, architecture):
         super(NeuralNetwork, self).__init__()
         layers = []
-        input_size = 3  # Assuming 3 input features as in your Keras example
+        input_size = 3  
         for units in architecture:
             layers.append(nn.Linear(input_size, units))
             layers.append(nn.ReLU())
-            input_size = units  # Update input size for the next layer
-        layers.append(nn.Linear(input_size, 1))  # Output layer
+            input_size = units  
+        layers.append(nn.Linear(input_size, 1)) 
         self.layers = nn.Sequential(*layers)
 
     def forward(self, x):
         return self.layers(x)
 
-# Prepare datasets
 def prepare_datasets(X_train, y_train, X_val, y_val, X_test, y_test):
     train_ds = TensorDataset(torch.tensor(X_train).float(), torch.tensor(y_train).float())
     val_ds = TensorDataset(torch.tensor(X_val).float(), torch.tensor(y_val).float())
     test_ds = TensorDataset(torch.tensor(X_test).float(), torch.tensor(y_test).float())
     return train_ds, val_ds, test_ds
 
-# Function to evaluate the model
 def evaluate_model(model, test_loader):
     model.eval()
     predictions = []
@@ -47,29 +43,24 @@ def evaluate_model(model, test_loader):
     mae = mean_absolute_error(np.array(actuals), np.array(predictions))
     return mse, mae
 
-# Load datasets using NumPy (paths need to be set according to your dataset locations)
 train_data = np.load('datasets/DiscreteStateSpace/train_data.npy')
 val_data = np.load('datasets/DiscreteStateSpace/val_data.npy')
 test_data = np.load('datasets/DiscreteStateSpace/test_data.npy')
 new_test_data = np.load('datasets/DiscreteStateSpace/final_test_data.npy')
 
-# Split the datasets into features (X) and target (y)
 X_train, y_train = train_data[:, :3], train_data[:, 3]
 X_val, y_val = val_data[:, :3], val_data[:, 3]
 X_test, y_test = test_data[:, :3], test_data[:, 3]
 X_new_test, y_new_test = new_test_data[:, :3], new_test_data[:, 3]
 
-# Prepare datasets for PyTorch by converting them into TensorDatasets
 train_ds, val_ds, test_ds = prepare_datasets(X_train, y_train, X_val, y_val, X_test, y_test)
 new_test_ds = TensorDataset(torch.tensor(X_new_test).float(), torch.tensor(y_new_test).float())
 
-# Create DataLoader objects for each dataset
 train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
 val_loader = DataLoader(val_ds, batch_size=32)
 test_loader = DataLoader(test_ds, batch_size=32)
 new_test_loader = DataLoader(new_test_ds, batch_size=32)
 
-# Training function adjusted for end-of-training plotting
 def train_model(model, architecture, train_loader, val_loader, optimizer, criterion, epochs=100, patience=10):
     best_val_loss = np.inf
     patience_counter = 0
@@ -101,7 +92,6 @@ def train_model(model, architecture, train_loader, val_loader, optimizer, criter
 
         print(f'Epoch [{epoch+1}/{epochs}], Loss: {running_loss / len(train_loader):.4f}, Val Loss: {val_loss / len(val_loader):.4f}')
 
-        # Early stopping check
         if val_loss < best_val_loss:
             best_val_loss = val_loss
             patience_counter = 0
@@ -115,7 +105,6 @@ def train_model(model, architecture, train_loader, val_loader, optimizer, criter
                 print("Early stopping triggered")
                 break
 
-    # Plotting after training is complete
     plt.figure(figsize=(10, 5))
     plt.plot(train_losses, label='Training Loss')
     plt.plot(val_losses, label='Validation Loss')
@@ -125,16 +114,15 @@ def train_model(model, architecture, train_loader, val_loader, optimizer, criter
     plt.legend()
     plt.show()
 
-# Define your network architectures
 network_architectures = [
-    # (16,),                # Single layer with fewer neurons
+    (16,),                # Single layer with fewer neurons
     (32,),                # Single layer with more neurons
-    # (16, 16),             # Two layers, fewer neurons
-    # (32, 32),             # Two layers, moderate neurons
-    # (64,),                # Single layer, more neurons to capture potential non-linearities
-    # (16, 32, 16),         # Three layers, with a bottleneck
-    # (32, 64, 32),         # Three layers, more capacity than above
-    # (64, 32),             # Two layers, reducing complexity from original architectures
+    (16, 16),             # Two layers, fewer neurons
+    (32, 32),             # Two layers, moderate neurons
+    (64,),                # Single layer, more neurons to capture potential non-linearities
+    (16, 32, 16),         # Three layers, with a bottleneck
+    (32, 64, 32),         # Three layers, more capacity than above
+    (64, 32),             # Two layers, reducing complexity from original architectures
 ]
 
 best_mse = np.inf
@@ -146,7 +134,6 @@ for architecture in network_architectures:
     criterion = nn.MSELoss()
     print(f"Training model with architecture: {architecture}")
     train_model(model, architecture, train_loader, val_loader, optimizer, criterion)
-    # Load best model for evaluation to ensure the correct architecture is used
     checkpoint = torch.load('best_model.pth')
     model = NeuralNetwork(checkpoint['architecture']).to(device)
     model.load_state_dict(checkpoint['model_state_dict'])
@@ -158,12 +145,10 @@ for architecture in network_architectures:
         best_mae = mae
         best_architecture = architecture
 
-# Assuming best_model.pth has the best model, load it for final evaluation
 checkpoint = torch.load('best_model.pth')
 best_model = NeuralNetwork(checkpoint['architecture']).to(device)
 best_model.load_state_dict(checkpoint['model_state_dict'])
 
-# Evaluate on new test data
 new_test_mse, new_test_mae = evaluate_model(best_model, new_test_loader)
 print(f"New Test MSE: {new_test_mse}, New Test MAE: {new_test_mae} for the best architecture {best_architecture}")
 
@@ -171,7 +156,7 @@ def plot_predictions_over_time(model, loader):
     model.eval()
     predictions = []
     actuals = []
-    time_steps = []  # To keep track of the sample index or "time"
+    time_steps = [] 
 
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(loader):
@@ -179,9 +164,8 @@ def plot_predictions_over_time(model, loader):
             outputs = model(inputs)
             predictions.extend(outputs.view(-1).cpu().numpy())
             actuals.extend(targets.view(-1).cpu().numpy())
-            time_steps.extend([batch_idx] * inputs.size(0))  # Assuming constant batch size
+            time_steps.extend([batch_idx] * inputs.size(0))  
 
-    # Convert to numpy arrays for plotting
     predictions = np.array(predictions)
     actuals = np.array(actuals)
     time_steps = np.array(time_steps)
