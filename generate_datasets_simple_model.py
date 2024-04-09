@@ -44,7 +44,7 @@ dt = 0.01  # Time step in seconds
 time_end = 10.0  # Total time for each simulation in seconds
 
 # Generate datasets for the discretized state-space model
-num_simulations = {'train': 300, 'val': 100, 'test': 100, 'final_test': 100}
+num_simulations = {'train': 300, 'val': 200, 'test': 200, 'final_test': 100}
 datasets = {key: generate_discrete_state_space_dataset(num, dt, time_end) for key, num in num_simulations.items()}
 
 # Save the datasets
