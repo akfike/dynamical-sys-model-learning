@@ -127,14 +127,14 @@ def train_model(model, architecture, train_loader, val_loader, optimizer, criter
 
 # Define your network architectures
 network_architectures = [
-    (16,),                # Single layer with fewer neurons
+    # (16,),                # Single layer with fewer neurons
     (32,),                # Single layer with more neurons
-    (16, 16),             # Two layers, fewer neurons
-    (32, 32),             # Two layers, moderate neurons
-    (64,),                # Single layer, more neurons to capture potential non-linearities
-    (16, 32, 16),         # Three layers, with a bottleneck
-    (32, 64, 32),         # Three layers, more capacity than above
-    (64, 32),             # Two layers, reducing complexity from original architectures
+    # (16, 16),             # Two layers, fewer neurons
+    # (32, 32),             # Two layers, moderate neurons
+    # (64,),                # Single layer, more neurons to capture potential non-linearities
+    # (16, 32, 16),         # Three layers, with a bottleneck
+    # (32, 64, 32),         # Three layers, more capacity than above
+    # (64, 32),             # Two layers, reducing complexity from original architectures
 ]
 
 best_mse = np.inf
