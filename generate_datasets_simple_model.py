@@ -4,7 +4,7 @@ from scipy.signal import cont2discrete
 def generate_discrete_state_space_dataset(num_simulations, dt, time_end, x_range=[(-1, 1), (-1, 1)], noise_level=0.01):
     # Define continuous-time system matrices
     A = np.array([[-1, 1], [1, -1]])
-    B = np.array([[1], [0]])
+    B = np.array([[1], [0]])  # B will not be used since we're assuming K=0
     C = np.eye(2)  # Assuming full state output
     D = np.zeros((2, 1))  # No direct feedthrough
     
@@ -13,13 +13,12 @@ def generate_discrete_state_space_dataset(num_simulations, dt, time_end, x_range
     Ad, Bd, _, _, _ = system_discrete
     
     # Initialize an empty array for the dataset
-    dataset = np.empty((0, 5))  # Columns: u(t), x1(t), x2(t), x1(t+dt), x2(t+dt)
+    dataset = np.empty((0, 4))  # Columns: x1(t), x2(t), x1(t+dt), x2(t+dt), removed u(t)
     
     # Generate data
     for sim in range(num_simulations):
         time = np.arange(0, time_end, dt)
-        u = np.sin(time * 2 * np.pi / time_end * np.random.uniform(0.5, 1.5))  # Input function
-        u_noisy = u + np.random.normal(0, noise_level, size=time.shape)  # Add noise to input
+        # u = np.sin(time * 2 * np.pi / time_end * np.random.uniform(0.5, 1.5))  # Not needed anymore
         
         x = np.zeros((len(time), 2))  # Initialize state matrix
         
@@ -29,12 +28,13 @@ def generate_discrete_state_space_dataset(num_simulations, dt, time_end, x_range
         
         # Simulate using the discretized system
         for t in range(1, len(time)):
-            x[t] = Ad.dot(x[t-1]) + Bd.flatten() * u_noisy[t-1]
+            # Updated to not include input u(t)
+            x[t] = Ad.dot(x[t-1])
         
         x_noisy = x + np.random.normal(0, noise_level, size=x.shape)  # Add noise to states
         
-        # Prepare the data (excluding the last time step for x to match dimensions)
-        simulation_data = np.column_stack((u_noisy[:-1], x_noisy[:-1], x_noisy[1:]))
+        # Prepare the data (excluding the last time step for x to match dimensions), removed u(t)
+        simulation_data = np.column_stack((x_noisy[:-1], x_noisy[1:]))
         dataset = np.vstack((dataset, simulation_data))
     
     return dataset

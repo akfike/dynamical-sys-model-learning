@@ -12,7 +12,7 @@ def generate_discrete_complex_dataset(num_simulations, dt, time_end, x_range=[(-
         [k31, 0, -k31, 0],
         [kd, 0, 0, -kd]
     ])
-    B = np.array([[1/V1], [0], [0], [0]])
+    B = np.array([[1/V1], [0], [0], [0]])  # B will not be used since we're assuming K=0
     C = np.eye(4)  # Assuming full state output
     D = np.zeros((4, 1))  # No direct feedthrough
     
@@ -21,13 +21,12 @@ def generate_discrete_complex_dataset(num_simulations, dt, time_end, x_range=[(-
     Ad, Bd, _, _, _ = system_discrete
     
     # Initialize an empty array for the dataset
-    dataset = np.empty((0, 9))  # Columns for u(t), four states at t, four states at t+dt
+    dataset = np.empty((0, 8))  # Columns for four states at t, four states at t+dt, removed u(t)
     
     # Generate data
     for sim in range(num_simulations):
         time = np.arange(0, time_end, dt)
-        u = np.sin(time * 2 * np.pi / time_end * np.random.uniform(0.5, 1.5))  # Input function
-        u_noisy = u + np.random.normal(0, noise_level, size=time.shape)  # Add noise to input
+        # u = np.sin(time * 2 * np.pi / time_end * np.random.uniform(0.5, 1.5))  # Not needed anymore
         
         x = np.zeros((len(time), 4))  # Initialize state matrix
         
@@ -37,12 +36,13 @@ def generate_discrete_complex_dataset(num_simulations, dt, time_end, x_range=[(-
         
         # Simulate using the discretized system
         for t in range(1, len(time)):
-            x[t] = Ad.dot(x[t-1]) + Bd.flatten() * u_noisy[t-1]
+            # Updated to not include input u(t)
+            x[t] = Ad.dot(x[t-1])
         
         x_noisy = x + np.random.normal(0, noise_level, size=x.shape)  # Add noise to states
         
-        # Prepare the data
-        simulation_data = np.column_stack((u_noisy[:-1], x_noisy[:-1], x_noisy[1:]))
+        # Prepare the data (excluding input u(t))
+        simulation_data = np.column_stack((x_noisy[:-1], x_noisy[1:]))
         dataset = np.vstack((dataset, simulation_data))
     
     return dataset
@@ -52,7 +52,7 @@ dt = 0.01  # Time step in seconds
 time_end = 10.0  # Total time for each simulation in seconds
 
 # Generate datasets
-num_simulations = {'train': 300, 'val': 100, 'test': 100, 'final_test': 100}
+num_simulations = {'train': 300, 'val': 200, 'test': 200, 'final_test': 100}
 datasets = {key: generate_discrete_complex_dataset(num, dt, time_end) for key, num in num_simulations.items()}
 
 # Save the datasets

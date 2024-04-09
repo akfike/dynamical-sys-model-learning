@@ -48,10 +48,10 @@ def evaluate_model(model, test_loader):
     return mse, mae
 
 # Load datasets using NumPy (paths need to be set according to your dataset locations)
-train_data = np.load('datasets/RLC/train_data_rlc.npy')
-val_data = np.load('datasets/RLC/val_data_rlc.npy')
-test_data = np.load('datasets/RLC/test_data_rlc.npy')
-new_test_data = np.load('datasets/RLC/final_test_data_RLC.npy')
+train_data = np.load('datasets/DiscreteStateSpace/train_data.npy')
+val_data = np.load('datasets/DiscreteStateSpace/val_data.npy')
+test_data = np.load('datasets/DiscreteStateSpace/test_data.npy')
+new_test_data = np.load('datasets/DiscreteStateSpace/final_test_data.npy')
 
 # Split the datasets into features (X) and target (y)
 X_train, y_train = train_data[:, :3], train_data[:, 3]
@@ -167,35 +167,33 @@ best_model.load_state_dict(checkpoint['model_state_dict'])
 new_test_mse, new_test_mae = evaluate_model(best_model, new_test_loader)
 print(f"New Test MSE: {new_test_mse}, New Test MAE: {new_test_mae} for the best architecture {best_architecture}")
 
-# Plotting
-def plot_predictions(model, loader):
+def plot_predictions_over_time(model, loader):
     model.eval()
     predictions = []
     actuals = []
+    time_steps = []  # To keep track of the sample index or "time"
+
     with torch.no_grad():
-        for inputs, targets in loader:
+        for batch_idx, (inputs, targets) in enumerate(loader):
             inputs = inputs.to(device)
             outputs = model(inputs)
             predictions.extend(outputs.view(-1).cpu().numpy())
-            actuals.extend(targets.numpy())
-    
+            actuals.extend(targets.view(-1).cpu().numpy())
+            time_steps.extend([batch_idx] * inputs.size(0))  # Assuming constant batch size
+
+    # Convert to numpy arrays for plotting
+    predictions = np.array(predictions)
+    actuals = np.array(actuals)
+    time_steps = np.array(time_steps)
+
     plt.figure(figsize=(10, 6))
-    plt.scatter(actuals, predictions, alpha=0.5)
-    plt.title('Actual vs. Predicted Values')
-    plt.xlabel('Actual Values')
-    plt.ylabel('Predicted Values')
-    plt.plot([min(actuals), max(actuals)], [min(actuals), max(actuals)], 'k--', lw=3)  # Diagonal line
-    plt.show()
-    
-    # Time series plot
-    plt.figure(figsize=(10, 6))
-    plt.plot(actuals[:100], label='Actual', marker='.')
-    plt.plot(predictions[:100], label='Predicted', marker='x')
-    plt.title('Comparison of Actual and Predicted Values (First 100 Samples)')
-    plt.xlabel('Sample Index')
+    plt.plot(time_steps, actuals, 'b-', label='Actual', marker='.', markersize=10, linewidth=1)
+    plt.plot(time_steps, predictions, 'r--', label='Predicted', marker='x', markersize=5, linewidth=1)
+    plt.title('Actual vs Predicted Values Over Time')
+    plt.xlabel('Time Step')
     plt.ylabel('Value')
     plt.legend()
     plt.show()
 
 
-plot_predictions(best_model, new_test_loader)
+plot_predictions_over_time(best_model, new_test_loader)
